@@ -130,7 +130,7 @@ module.exports = (schema, options) ->
 		if @$__.cascadeSaveConfig and @$__.cascadeSaveConfig.filter
 
 			filter = @$__.cascadeSaveConfig.filter
-			data = filter(data, path)
+			data = filter.apply(@, [data, path])
 		else
 			filter = null
 

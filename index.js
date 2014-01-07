@@ -144,7 +144,7 @@ module.exports = function(schema, options) {
     }
     if (this.$__.cascadeSaveConfig && this.$__.cascadeSaveConfig.filter) {
       filter = this.$__.cascadeSaveConfig.filter;
-      data = filter(data, path);
+      data = filter.apply(this, [data, path]);
     } else {
       filter = null;
     }

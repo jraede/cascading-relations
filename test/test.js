@@ -52,7 +52,8 @@ fooSchema = new mongoose.Schema({
         ref: 'Bar'
       }
     ]
-  }
+  },
+  account: String
 });
 
 bazSchema = new mongoose.Schema({
@@ -217,6 +218,7 @@ describe('Testing', function() {
       _this = this;
     foo = new fooClass({
       title: 'My Foo',
+      account: 'asdf',
       _related: {
         _bar: {
           title: 'My Bar',
@@ -245,7 +247,7 @@ describe('Testing', function() {
     }, {
       limit: ['_bar', 'multi._bar', 'multi._bar._baz'],
       filter: function(doc) {
-        doc.account = 'asdf';
+        doc.account = this.account;
         return doc;
       }
     });

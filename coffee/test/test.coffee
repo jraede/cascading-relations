@@ -39,6 +39,7 @@ fooSchema = new mongoose.Schema
 				type:mongoose.Schema.Types.ObjectId
 				ref:'Bar'
 		]
+	account:String
 
 bazSchema = new mongoose.Schema
 	title:String
@@ -158,6 +159,7 @@ describe 'Testing', ->
 	it 'should do a save while limiting cascaded relations', (done) ->
 		foo = new fooClass
 			title:'My Foo'
+			account:'asdf'
 			_related:
 				_bar:
 					title:'My Bar'
@@ -177,7 +179,7 @@ describe 'Testing', ->
 		, 
 			limit:['_bar', 'multi._bar', 'multi._bar._baz']
 			filter:(doc) ->
-				doc.account = 'asdf'
+				doc.account = @account
 				return doc
 
 

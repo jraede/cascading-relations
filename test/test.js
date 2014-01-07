@@ -30,7 +30,8 @@ fooSchema = new mongoose.Schema({
   _bars: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Bar'
+      ref: 'Bar',
+      $through: '_foo'
     }
   ],
   _bar: {
@@ -62,11 +63,11 @@ bazSchema = new mongoose.Schema({
   }
 });
 
-fooSchema.plugin(relations.plugin);
+fooSchema.plugin(relations);
 
-barSchema.plugin(relations.plugin);
+barSchema.plugin(relations);
 
-bazSchema.plugin(relations.plugin);
+bazSchema.plugin(relations);
 
 barClass = mongoose.model('Bar', barSchema);
 
@@ -138,6 +139,10 @@ describe('Testing', function() {
       return done();
     });
   });
+  it('should have set the $through value on a relation array', function(done) {
+    this.foo._related._bars[0]._foo.toString().should.equal(this.foo._id.toString());
+    return done();
+  });
   it('should cascade delete when designated', function(done) {
     var deletedBarId, throughBarId;
     deletedBarId = this.foo.multi._bar;
@@ -191,7 +196,7 @@ describe('Testing', function() {
       }, 5000);
     });
   });
-  return it('should do normal save without cascading', function(done) {
+  it('should do normal save without cascading', function(done) {
     var foo;
     foo = new fooClass({
       title: 'My Foo',
@@ -205,5 +210,35 @@ describe('Testing', function() {
       should.not.exist(foo._bar);
       return done();
     });
+  });
+  return it('should do a save while limiting cascaded relations', function(done) {
+    var foo;
+    foo = new fooClass({
+      title: 'My Foo',
+      _related: {
+        _bar: {
+          title: 'My Bar',
+          _related: {
+            _baz: {
+              title: 'My Baz'
+            }
+          }
+        },
+        multi: {
+          _bar: {
+            title: 'My Bar 2',
+            _related: {
+              _baz: {
+                title: 'My Baz 2'
+              }
+            }
+          }
+        }
+      }
+    });
+    return foo.cascadeSave(function(err, res) {
+      should.not.exist(res._related._bar._baz);
+      return done();
+    }, ['_bar', 'multi._bar', 'multi._bar._baz']);
   });
 });

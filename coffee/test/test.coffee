@@ -22,6 +22,7 @@ fooSchema = new mongoose.Schema
 	_bars:[
 			type:mongoose.Schema.Types.ObjectId
 			ref:'Bar'
+			$through:'_foo'
 	]
 	_bar:
 		type:mongoose.Schema.Types.ObjectId
@@ -45,9 +46,9 @@ bazSchema = new mongoose.Schema
 		ref:'Bar'
 		$through:'_baz'
 
-fooSchema.plugin(relations.plugin)
-barSchema.plugin(relations.plugin)
-bazSchema.plugin(relations.plugin)
+fooSchema.plugin(relations)
+barSchema.plugin(relations)
+bazSchema.plugin(relations)
 
 barClass = mongoose.model('Bar', barSchema)
 fooClass = mongoose.model('Foo', fooSchema)
@@ -100,7 +101,9 @@ describe 'Testing', ->
 			res._related.multi._bar.title.should.equal('Third Bar')
 			res._related._bar._foo.toString().should.equal(res._id.toString())
 			done()
-
+	it 'should have set the $through value on a relation array', (done) ->
+		@foo._related._bars[0]._foo.toString().should.equal(@foo._id.toString())
+		done()
 	it 'should cascade delete when designated', (done) ->
 		deletedBarId = @foo.multi._bar
 		throughBarId = @foo._bar
@@ -114,6 +117,8 @@ describe 'Testing', ->
 						done()
 
 			, 5000
+
+	
 
 	it 'should cascade save multiple levels deep', (done) ->
 		foo = new fooClass
@@ -148,6 +153,26 @@ describe 'Testing', ->
 		foo.save (err, result) ->
 			should.not.exist(foo._bar)
 			done()
+
+	it 'should do a save while limiting cascaded relations', (done) ->
+		foo = new fooClass
+			title:'My Foo'
+			_related:
+				_bar:
+					title:'My Bar'
+					_related:
+						_baz:
+							title:'My Baz'
+				multi:
+					_bar:
+						title:'My Bar 2'
+						_related:
+							_baz:
+								title:'My Baz 2'
+		foo.cascadeSave (err, res) ->
+			should.not.exist(res._related._bar._baz)
+			done()
+		, ['_bar', 'multi._bar', 'multi._bar._baz']
 
 
 

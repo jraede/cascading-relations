@@ -29,12 +29,26 @@ module.exports = (schema, options) ->
 		return true
 
 
-	schema.methods.cascadeSave = ->
+	schema.methods.cascadeSave = (callback, allow=null) ->
 		@$__.cascadeSave = true
-		return @save.apply(@, arguments)
+
+		@$__.cascadeSaveLimitRelations = allow
+
+		return @save(callback)
 	# Save relations and update refs
 	schema.methods.$__saveRelation = (path, val) ->
 		deferred = Q.defer()
+
+		allowedRelation = (rel) =>
+			for allowed in @$__.cascadeSaveLimitRelations
+				if allowed.substr(0, rel.length) is rel
+					return true
+			return false
+		# If they're not allowed to save that one, then skip it
+		if @$__.cascadeSaveLimitRelations and !allowedRelation(path)
+			deferred.resolve()
+			return deferred.promise
+		
 		promises = []
 		if @schema.paths[path]
 			if @schema.paths[path].instance is 'ObjectID' and @schema.paths[path].options.ref?
@@ -76,7 +90,7 @@ module.exports = (schema, options) ->
 		deferred = Q.defer()
 		# Get the ref
 		ref = @schema.paths[path].caster.options.ref
-		through = @schema.paths[path].caster.options.through
+		through = @schema.paths[path].caster.options.$through
 
 
 		data = dot.get(@get('_related'), path)
@@ -136,15 +150,26 @@ module.exports = (schema, options) ->
 				res.set(data)
 
 				# If it has a cascade save method, use it. Otherwise just use save
+				newArr = null
 				if res.cascadeSave? and typeof res.cascadeSave is 'function'
 					method = 'cascadeSave'
+
+					# And we also need to pass along the relevant paths in limitRelations
+					if @$__.cascadeSaveLimitRelations
+						newArr = []
+						for allowed in @$__.cascadeSaveLimitRelations
+							if allowed.substr(0, path.length + 1) is (path + '.')
+								newArr.push(allowed.substr(path.length + 1))
+
 				else
 					method = 'save'
+
 				res[method] (err, res) =>
 					if err
 						return deferred.reject(err)
 
 					deferred.resolve(res)
+				, newArr
 		else
 
 			# We need to create a new one
@@ -156,6 +181,12 @@ module.exports = (schema, options) ->
 				@set(path, newMod._id)
 			if newMod.cascadeSave? and typeof newMod.cascadeSave is 'function'
 				method = 'cascadeSave'
+				if @$__.cascadeSaveLimitRelations
+					newArr = []
+					for allowed in @$__.cascadeSaveLimitRelations
+						if allowed.substr(0, path.length + 1) is (path + '.')
+							newArr.push(allowed.substr(path.length + 1))
+
 			else
 				method = 'save'
 			newMod[method] (err, res) =>
@@ -163,6 +194,7 @@ module.exports = (schema, options) ->
 					return deferred.reject(err)
 				
 				deferred.resolve(res)
+			, newArr
 
 		# Set it to the updated value
 		return deferred.promise

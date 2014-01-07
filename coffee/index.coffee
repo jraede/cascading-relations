@@ -29,23 +29,22 @@ module.exports = (schema, options) ->
 		return true
 
 
-	schema.methods.cascadeSave = (callback, allow=null) ->
+	schema.methods.cascadeSave = (callback, config=null) ->
 		@$__.cascadeSave = true
 
-		@$__.cascadeSaveLimitRelations = allow
-
+		@$__.cascadeSaveConfig = config
 		return @save(callback)
 	# Save relations and update refs
 	schema.methods.$__saveRelation = (path, val) ->
 		deferred = Q.defer()
 
 		allowedRelation = (rel) =>
-			for allowed in @$__.cascadeSaveLimitRelations
+			for allowed in @$__.cascadeSaveConfig.limit
 				if allowed.substr(0, rel.length) is rel
 					return true
 			return false
 		# If they're not allowed to save that one, then skip it
-		if @$__.cascadeSaveLimitRelations and !allowedRelation(path)
+		if @$__.cascadeSaveConfig and @$__.cascadeSaveConfig.limit and !allowedRelation(path)
 			deferred.resolve()
 			return deferred.promise
 		
@@ -126,6 +125,15 @@ module.exports = (schema, options) ->
 					dot.set(data, through, d)
 			else
 				dot.set(data, through, @_id)
+
+		# If there is a filter defined in the cascade save config, apply them
+		if @$__.cascadeSaveConfig and @$__.cascadeSaveConfig.filter
+
+			filter = @$__.cascadeSaveConfig.filter
+			data = filter(data, path)
+		else
+			filter = null
+
 		modelClass = mongoose.model(ref)
 		
 		# If there's an ID, fetch the object and update it.
@@ -155,9 +163,9 @@ module.exports = (schema, options) ->
 					method = 'cascadeSave'
 
 					# And we also need to pass along the relevant paths in limitRelations
-					if @$__.cascadeSaveLimitRelations
+					if @$__.cascadeSaveConfig and @$__.cascadeSaveConfig.limit?
 						newArr = []
-						for allowed in @$__.cascadeSaveLimitRelations
+						for allowed in @$__.cascadeSaveConfig.limit
 							if allowed.substr(0, path.length + 1) is (path + '.')
 								newArr.push(allowed.substr(path.length + 1))
 
@@ -169,7 +177,9 @@ module.exports = (schema, options) ->
 						return deferred.reject(err)
 
 					deferred.resolve(res)
-				, newArr
+				, 
+					limit:newArr
+					filter:filter
 		else
 
 			# We need to create a new one
@@ -179,11 +189,13 @@ module.exports = (schema, options) ->
 				@set(path, orig)
 			else
 				@set(path, newMod._id)
+
+			newArr = null
 			if newMod.cascadeSave? and typeof newMod.cascadeSave is 'function'
 				method = 'cascadeSave'
-				if @$__.cascadeSaveLimitRelations
+				if @$__.cascadeSaveConfig and @$__.cascadeSaveConfig.limit?
 					newArr = []
-					for allowed in @$__.cascadeSaveLimitRelations
+					for allowed in @$__.cascadeSaveConfig.limit
 						if allowed.substr(0, path.length + 1) is (path + '.')
 							newArr.push(allowed.substr(path.length + 1))
 
@@ -194,7 +206,9 @@ module.exports = (schema, options) ->
 					return deferred.reject(err)
 				
 				deferred.resolve(res)
-			, newArr
+			, 
+				limit:newArr
+				filter:filter
 
 		# Set it to the updated value
 		return deferred.promise

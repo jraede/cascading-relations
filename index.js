@@ -33,12 +33,12 @@ module.exports = function(schema, options) {
     }
     return true;
   });
-  schema.methods.cascadeSave = function(callback, allow) {
-    if (allow == null) {
-      allow = null;
+  schema.methods.cascadeSave = function(callback, config) {
+    if (config == null) {
+      config = null;
     }
     this.$__.cascadeSave = true;
-    this.$__.cascadeSaveLimitRelations = allow;
+    this.$__.cascadeSaveConfig = config;
     return this.save(callback);
   };
   schema.methods.$__saveRelation = function(path, val) {
@@ -47,7 +47,7 @@ module.exports = function(schema, options) {
     deferred = Q.defer();
     allowedRelation = function(rel) {
       var allowed, _i, _len, _ref;
-      _ref = _this.$__.cascadeSaveLimitRelations;
+      _ref = _this.$__.cascadeSaveConfig.limit;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         allowed = _ref[_i];
         if (allowed.substr(0, rel.length) === rel) {
@@ -56,7 +56,7 @@ module.exports = function(schema, options) {
       }
       return false;
     };
-    if (this.$__.cascadeSaveLimitRelations && !allowedRelation(path)) {
+    if (this.$__.cascadeSaveConfig && this.$__.cascadeSaveConfig.limit && !allowedRelation(path)) {
       deferred.resolve();
       return deferred.promise;
     }
@@ -128,7 +128,7 @@ module.exports = function(schema, options) {
     return deferred.promise;
   };
   schema.methods.$__saveRelatedDoc = function(path, data, ref, through) {
-    var allowed, d, deferred, isArray, method, modelClass, newArr, newMod, orig, _i, _len, _ref,
+    var allowed, d, deferred, filter, isArray, method, modelClass, newArr, newMod, orig, _i, _len, _ref,
       _this = this;
     deferred = Q.defer();
     if (through) {
@@ -141,6 +141,12 @@ module.exports = function(schema, options) {
       } else {
         dot.set(data, through, this._id);
       }
+    }
+    if (this.$__.cascadeSaveConfig && this.$__.cascadeSaveConfig.filter) {
+      filter = this.$__.cascadeSaveConfig.filter;
+      data = filter(data, path);
+    } else {
+      filter = null;
     }
     modelClass = mongoose.model(ref);
     orig = this.get(path);
@@ -168,9 +174,9 @@ module.exports = function(schema, options) {
         newArr = null;
         if ((res.cascadeSave != null) && typeof res.cascadeSave === 'function') {
           method = 'cascadeSave';
-          if (_this.$__.cascadeSaveLimitRelations) {
+          if (_this.$__.cascadeSaveConfig && (_this.$__.cascadeSaveConfig.limit != null)) {
             newArr = [];
-            _ref = _this.$__.cascadeSaveLimitRelations;
+            _ref = _this.$__.cascadeSaveConfig.limit;
             for (_i = 0, _len = _ref.length; _i < _len; _i++) {
               allowed = _ref[_i];
               if (allowed.substr(0, path.length + 1) === (path + '.')) {
@@ -186,7 +192,10 @@ module.exports = function(schema, options) {
             return deferred.reject(err);
           }
           return deferred.resolve(res);
-        }, newArr);
+        }, {
+          limit: newArr,
+          filter: filter
+        });
       });
     } else {
       newMod = new modelClass(data);
@@ -196,11 +205,12 @@ module.exports = function(schema, options) {
       } else {
         this.set(path, newMod._id);
       }
+      newArr = null;
       if ((newMod.cascadeSave != null) && typeof newMod.cascadeSave === 'function') {
         method = 'cascadeSave';
-        if (this.$__.cascadeSaveLimitRelations) {
+        if (this.$__.cascadeSaveConfig && (this.$__.cascadeSaveConfig.limit != null)) {
           newArr = [];
-          _ref = this.$__.cascadeSaveLimitRelations;
+          _ref = this.$__.cascadeSaveConfig.limit;
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             allowed = _ref[_i];
             if (allowed.substr(0, path.length + 1) === (path + '.')) {
@@ -216,7 +226,10 @@ module.exports = function(schema, options) {
           return deferred.reject(err);
         }
         return deferred.resolve(res);
-      }, newArr);
+      }, {
+        limit: newArr,
+        filter: filter
+      });
     }
     return deferred.promise;
   };

@@ -16,6 +16,7 @@ barSchema = new mongoose.Schema
 		$cascadeDelete:true
 
 	title:String
+	account:String
 
 fooSchema = new mongoose.Schema
 	title:String
@@ -169,10 +170,21 @@ describe 'Testing', ->
 						_related:
 							_baz:
 								title:'My Baz 2'
-		foo.cascadeSave (err, res) ->
+		foo.cascadeSave (err, res) =>
+			@foo = res
 			should.not.exist(res._related._bar._baz)
 			done()
-		, ['_bar', 'multi._bar', 'multi._bar._baz']
+		, 
+			limit:['_bar', 'multi._bar', 'multi._bar._baz']
+			filter:(doc) ->
+				doc.account = 'asdf'
+				return doc
+
+
+	it 'should apply filter to cascading relations when saving', (done) ->
+		@foo._related._bar.account.should.equal('asdf')
+		done()
+
 
 
 

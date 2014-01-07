@@ -22,7 +22,8 @@ barSchema = new mongoose.Schema({
     $through: '_bar',
     $cascadeDelete: true
   },
-  title: String
+  title: String,
+  account: String
 });
 
 fooSchema = new mongoose.Schema({
@@ -211,8 +212,9 @@ describe('Testing', function() {
       return done();
     });
   });
-  return it('should do a save while limiting cascaded relations', function(done) {
-    var foo;
+  it('should do a save while limiting cascaded relations', function(done) {
+    var foo,
+      _this = this;
     foo = new fooClass({
       title: 'My Foo',
       _related: {
@@ -237,8 +239,19 @@ describe('Testing', function() {
       }
     });
     return foo.cascadeSave(function(err, res) {
+      _this.foo = res;
       should.not.exist(res._related._bar._baz);
       return done();
-    }, ['_bar', 'multi._bar', 'multi._bar._baz']);
+    }, {
+      limit: ['_bar', 'multi._bar', 'multi._bar._baz'],
+      filter: function(doc) {
+        doc.account = 'asdf';
+        return doc;
+      }
+    });
+  });
+  return it('should apply filter to cascading relations when saving', function(done) {
+    this.foo._related._bar.account.should.equal('asdf');
+    return done();
   });
 });

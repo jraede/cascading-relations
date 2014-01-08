@@ -3,7 +3,7 @@ relations = require '../index'
 should = require 'should'
 mongoose.connect 'mongodb://localhost/mongoose_relations_test'
 mongoose.set 'debug', true
-
+dot = require 'dot-component'
 barSchema = new mongoose.Schema
 	_foo:
 		type:mongoose.Schema.Types.ObjectId
@@ -66,14 +66,16 @@ describe 'Testing', ->
 			foo = new fooClass
 				title:'My Foo'
 				multi:
-					_bars:[res._id]
+					_bars:[]
+					_bar:res._id
 
 			foo.cascadeSave (err, res) ->
 
-				mongoose.model('Foo').find().populate('multi._bars').exec (err, res) ->
+				mongoose.model('Foo').find().populate('multi._bar').populate('multi._bars').exec (err, res) ->
+					console.log res
+					res[0].multi._bar.toString().should.equal(bar._id.toString())
+					res[0]._related.multi._bar.title.should.equal('My Bar')
 
-					res[0].multi._bars[0].toString().should.equal(bar._id.toString())
-					res[0]._related.multi._bars[0].title.should.equal('My Bar')
 					done()
 	it 'should cascade save relations', (done) ->
 		foo = new fooClass
@@ -186,6 +188,82 @@ describe 'Testing', ->
 	it 'should apply filter to cascading relations when saving', (done) ->
 		@foo._related._bar.account.should.equal('asdf')
 		done()
+
+
+	it 'should still work with deep dot notation', ->
+		obj =
+			__t: "cornerstonesoftware__Unit"
+			__v: 2
+			_id: "52cc929a90b078e563000024"
+			bathrooms: 1
+			bedrooms: 1
+			core_account: "main-account"
+			current_rent: 3000
+			last_rent_increase: "Wed Jan 08 2014 15:49:46 GMT-0800 (PST)"
+			old_rent: 2000
+			street: "777 Via Hierba"
+			unit_number: "1"
+			status: "rented"
+			rent_changes: [
+					rent: 1000
+					effective_date: "Tue Jan 07 2014 15:49:46 GMT-0800 (PST)"
+					reason: "Unit added to system"
+					_id: "52cc929a90b078e563000025"
+					implemented: true
+					id: "52cc929a90b078e563000025"
+				,
+					reason: "Rent changed on tenant details"
+					rent: 2000
+					effective_date: "Tue Jan 07 2014 15:49:46 GMT-0800 (PST)"
+					_id: "52cc929a90b078e56300002f"
+					implemented: true
+					id: "52cc929a90b078e56300002f"
+				,
+					effective_date: "Wed Jan 08 2014 15:49:46 GMT-0800 (PST)"
+					rent: 3000
+					reason: "Test"
+					_id: "52cc929a90b078e563000033"
+					implemented: true
+					id: "52cc929a90b078e563000033"
+			]
+			tenants:
+				_current:
+					__t: "cornerstonesoftware__Tenant"
+					_first_month_rent_journal: "52cc929a90b078e563000027"
+					_deposit_journal: "52cc929a90b078e56300002a"
+					_unit: "52cc929a90b078e563000024"
+					_property: "52cc929a90b078e56300001b"
+					ssn: "123-45-6789"
+					move_in_date: "Tue Jan 07 2014 15:49:46 GMT-0800 (PST)"
+					rent_due_date: 8
+					deposit: 500
+					rent: 2000
+					core_account: "main-account"
+					_id: "52cc929a90b078e563000026"
+					__v: 0
+					additional_tenants: []
+					notes: []
+					balance: -2500
+					record_deposit: true
+					deposit_paid: false
+					status: "current"
+					contacts: []
+					name:
+						first:'Foo'
+						last:'Bar'
+					expected_move_out: null
+					_related:undefined
+					id: "52cc929a90b078e563000026"
+
+				_former: []
+
+			rent_controlled: false
+			notes: []
+			_related: undefined
+			id: "52cc929a90b078e563000024"
+				
+		dot.set(obj, 'tenants._former', [])
+		obj.tenants._current.name.first.should.equal('Foo')
 
 
 

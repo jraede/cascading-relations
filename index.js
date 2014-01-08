@@ -2,7 +2,7 @@ var Q, dot, mongoose;
 
 mongoose = require('mongoose');
 
-dot = require('dot-component');
+dot = require('dotaccess');
 
 Q = require('q');
 
@@ -27,8 +27,8 @@ module.exports = function(schema, options) {
         info = _ref[path];
         val = info.value;
         orig = dot.get(this, path);
-        dot.set(this, path, val);
-        dot.set(this._related, path, orig);
+        dot.set(this, path, val, true);
+        dot.set(this._related, path, orig, true);
       }
     }
     return true;
@@ -136,10 +136,10 @@ module.exports = function(schema, options) {
       if (d instanceof Array) {
         if (d.indexOf(this._id) < 0) {
           d.push(this._id);
-          dot.set(data, through, d);
+          dot.set(data, through, d, true);
         }
       } else {
-        dot.set(data, through, this._id);
+        dot.set(data, through, this._id, true);
       }
     }
     if (this.$__.cascadeSaveConfig && this.$__.cascadeSaveConfig.filter) {
@@ -274,12 +274,12 @@ module.exports = function(schema, options) {
               newVal.push(id);
             }
           }
-          dot.set(newRelated, path, newVal);
+          dot.set(newRelated, path, newVal, true);
         } else {
           if (rels._id === curVal) {
-            dot.set(newRelated, path, rels);
+            dot.set(newRelated, path, rels, true);
           } else {
-            dot.set(newRelated, path, curVal);
+            dot.set(newRelated, path, curVal, true);
           }
         }
       }

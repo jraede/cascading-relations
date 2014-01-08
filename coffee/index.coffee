@@ -1,5 +1,5 @@
 mongoose = require 'mongoose'
-dot = require 'dot-component'
+dot = require 'dotaccess'
 Q = require 'q'
 module.exports = (schema, options) ->
 	# schema.add
@@ -23,8 +23,8 @@ module.exports = (schema, options) ->
 			for path,info of @$__.populated
 				val = info.value
 				orig = dot.get(@, path)
-				dot.set(@, path, val)
-				dot.set(@_related, path, orig)
+				dot.set(@, path, val, true)
+				dot.set(@_related, path, orig, true)
 
 		return true
 
@@ -122,9 +122,9 @@ module.exports = (schema, options) ->
 			if d instanceof Array
 				if d.indexOf(@_id) < 0
 					d.push(@_id)
-					dot.set(data, through, d)
+					dot.set(data, through, d, true)
 			else
-				dot.set(data, through, @_id)
+				dot.set(data, through, @_id, true)
 
 		# If there is a filter defined in the cascade save config, apply them
 		if @$__.cascadeSaveConfig and @$__.cascadeSaveConfig.filter
@@ -243,12 +243,12 @@ module.exports = (schema, options) ->
 							newVal.push(rels[id.toString()])
 						else
 							newVal.push(id)
-					dot.set(newRelated, path, newVal)
+					dot.set(newRelated, path, newVal, true)
 				else
 					if rels._id is curVal
-						dot.set(newRelated, path, rels)
+						dot.set(newRelated, path, rels, true)
 					else
-						dot.set(newRelated, path, curVal)
+						dot.set(newRelated, path, curVal, true)
 			@set('_related', newRelated)
 			@$__.cascadeSave = false
 

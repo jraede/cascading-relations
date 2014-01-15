@@ -25,10 +25,16 @@ module.exports = (schema, options) ->
 				orig = dot.get(@, path)
 				dot.set(@, path, val, true)
 				dot.set(@_related, path, orig, true)
-
+		
+		
 		return true
+	# schema.pre 'init', (next, data) ->
+	# 	@$__.original = data
 
-
+	# 	next()
+	# schema.post 'save', ->
+	# 	@$__.original = @toObject()
+	# 	delete @$__.original._related
 	schema.methods.cascadeSave = (callback, config=null) ->
 		@$__.cascadeSave = true
 
@@ -95,6 +101,7 @@ module.exports = (schema, options) ->
 		data = dot.get(@get('_related'), path)
 
 		promises = []
+
 		# Data needs to be an array. If it's not we're fucked
 		if !(data instanceof Array)
 			deferred.reject(new Error("Data for multi relation must be an array!"))
@@ -145,8 +152,9 @@ module.exports = (schema, options) ->
 			isArray = false
 		if data._id
 			if isArray
-				orig.push(data._id)
-				@set(path, orig)
+				if orig.indexOf(data._id) < 0
+					orig.push(data._id)
+					@set(path, orig)
 			else
 				@set(path, data._id)
 			modelClass.findById data._id, (err, res) =>

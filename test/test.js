@@ -260,7 +260,7 @@ describe('Testing', function() {
     this.foo._related._bar.account.should.equal('asdf');
     return done();
   });
-  return it('should still work with deep dot notation', function() {
+  it('should still work with deep dot notation', function() {
     var obj;
     obj = {
       __t: "cornerstonesoftware__Unit",
@@ -338,5 +338,30 @@ describe('Testing', function() {
     };
     dot.set(obj, 'tenants._former', []);
     return obj.tenants._current.name.first.should.equal('Foo');
+  });
+  return it('should be accurate when you put with less relations (implicit delete)', function(done) {
+    var foo,
+      _this = this;
+    foo = new fooClass({
+      title: 'My Foo',
+      _related: {
+        _bars: [
+          {
+            title: 'First Bar'
+          }, {
+            title: 'Second Bar'
+          }
+        ]
+      }
+    });
+    return foo.cascadeSave(function(err, res) {
+      foo._bars.pop();
+      foo._related._bars.pop();
+      return foo.cascadeSave(function(err, res) {
+        res._bars.length.should.equal(1);
+        res._related._bars.length.should.equal(1);
+        return done();
+      });
+    });
   });
 });

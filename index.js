@@ -157,8 +157,10 @@ module.exports = function(schema, options) {
     }
     if (data._id) {
       if (isArray) {
-        orig.push(data._id);
-        this.set(path, orig);
+        if (orig.indexOf(data._id) < 0) {
+          orig.push(data._id);
+          this.set(path, orig);
+        }
       } else {
         this.set(path, data._id);
       }

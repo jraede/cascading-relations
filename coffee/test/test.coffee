@@ -265,6 +265,22 @@ describe 'Testing', ->
 		dot.set(obj, 'tenants._former', [])
 		obj.tenants._current.name.first.should.equal('Foo')
 
+	it 'should be accurate when you put with less relations (implicit delete)', (done) ->
+		foo = new fooClass
+			title:'My Foo'
+			_related:
+				_bars:[
+						title:'First Bar'
+					,
+						title:'Second Bar'
+				]
+		foo.cascadeSave (err, res) =>
+			foo._bars.pop()
+			foo._related._bars.pop()
+			foo.cascadeSave (err, res) ->
+				res._bars.length.should.equal(1)
+				res._related._bars.length.should.equal(1)
+				done()
 
 
 

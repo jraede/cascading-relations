@@ -10,7 +10,7 @@ mongoose.connect('mongodb://localhost/mongoose_relations_test');
 
 mongoose.set('debug', true);
 
-dot = require('dot-component');
+dot = require('dotaccess');
 
 barSchema = new mongoose.Schema({
   _foo: {
@@ -336,7 +336,7 @@ describe('Testing', function() {
       _related: void 0,
       id: "52cc929a90b078e563000024"
     };
-    dot.set(obj, 'tenants._former', []);
+    dot.set(obj, 'tenants._former', [], true);
     return obj.tenants._current.name.first.should.equal('Foo');
   });
   return it('should be accurate when you put with less relations (implicit delete)', function(done) {

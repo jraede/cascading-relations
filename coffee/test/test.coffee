@@ -3,7 +3,7 @@ relations = require '../index'
 should = require 'should'
 mongoose.connect 'mongodb://localhost/mongoose_relations_test'
 mongoose.set 'debug', true
-dot = require 'dot-component'
+dot = require 'dotaccess'
 barSchema = new mongoose.Schema
 	_foo:
 		type:mongoose.Schema.Types.ObjectId
@@ -262,7 +262,7 @@ describe 'Testing', ->
 			_related: undefined
 			id: "52cc929a90b078e563000024"
 				
-		dot.set(obj, 'tenants._former', [])
+		dot.set(obj, 'tenants._former', [], true)
 		obj.tenants._current.name.first.should.equal('Foo')
 
 	it 'should be accurate when you put with less relations (implicit delete)', (done) ->

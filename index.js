@@ -123,6 +123,8 @@ module.exports = function(schema, options) {
           _this.$__.populateRelations[path][result._id.toString()] = result;
         }
         return deferred.resolve();
+      }, function(err) {
+        return deferred.reject(err);
       });
     }
     return deferred.promise;

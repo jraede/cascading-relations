@@ -116,6 +116,8 @@ module.exports = (schema, options) ->
 				for result in results
 					@$__.populateRelations[path][result._id.toString()] = result
 				deferred.resolve()
+			, (err) ->
+				deferred.reject(err)
 
 		return deferred.promise
 

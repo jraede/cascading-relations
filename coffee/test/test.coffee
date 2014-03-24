@@ -72,7 +72,6 @@ describe 'Testing', ->
 			foo.cascadeSave (err, res) ->
 
 				mongoose.model('Foo').find().populate('multi._bar').populate('multi._bars').exec (err, res) ->
-					console.log res
 					res[0].multi._bar.toString().should.equal(bar._id.toString())
 					res[0]._related.multi._bar.title.should.equal('My Bar')
 
@@ -281,6 +280,25 @@ describe 'Testing', ->
 				res._bars.length.should.equal(1)
 				res._related._bars.length.should.equal(1)
 				done()
+
+	it 'should rearrange when running populate on document rather than query', (done) ->
+		foo = new fooClass
+			title:'My Foo'
+			_related:
+				_bars:[
+						title:'First Bar'
+					,
+						title:'Second Bar'
+				]
+		foo.cascadeSave (err, res) =>
+			
+			fooClass.findById res._id, (err, foo) ->
+				foo.populate '_bars', (err, foo) ->
+					should.exist(foo._related)
+					should.exist(foo._related._bars)
+					foo._related._bars.length.should.equal(2)
+					foo._bars[0].toString().should.equal(foo._related._bars[0]._id.toString())
+					done()
 
 
 

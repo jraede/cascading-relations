@@ -18,6 +18,12 @@ module.exports = (schema, options) ->
 
 	# Move populated docs over to _related and keep the original IDs
 	schema.post 'init', (next) ->
+		@$__movePopulated()
+		
+		
+		return true
+
+	schema.methods.$__movePopulated = ->
 		if @$__.populated?
 			@_related = {}
 			for path,info of @$__.populated
@@ -25,16 +31,21 @@ module.exports = (schema, options) ->
 				orig = dot.get(@, path)
 				dot.set(@, path, val, true)
 				dot.set(@_related, path, orig, true)
-		
-		
-		return true
-	# schema.pre 'init', (next, data) ->
-	# 	@$__.original = data
 
-	# 	next()
-	# schema.post 'save', ->
-	# 	@$__.original = @toObject()
-	# 	delete @$__.original._related
+
+	schema.methods.populate = (fields, callback) ->
+		mongoose.Document.prototype.populate.apply @, [fields, (err, doc) =>
+			if !err
+
+				@$__movePopulated()
+				callback(err, doc)
+			else
+				callback(err, doc)
+
+
+		]
+			
+
 	schema.methods.cascadeSave = (callback, config=null) ->
 		@$__.cascadeSave = true
 

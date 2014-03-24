@@ -46,6 +46,9 @@ module.exports = (schema, options) ->
 		]
 			
 
+
+
+
 	schema.methods.cascadeSave = (callback, config=null) ->
 		@$__.cascadeSave = true
 

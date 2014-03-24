@@ -19,20 +19,38 @@ module.exports = function(schema, options) {
     virtuals: true
   });
   schema.post('init', function(next) {
-    var info, orig, path, val, _ref;
+    this.$__movePopulated();
+    return true;
+  });
+  schema.methods.$__movePopulated = function() {
+    var info, orig, path, val, _ref, _results;
     if (this.$__.populated != null) {
       this._related = {};
       _ref = this.$__.populated;
+      _results = [];
       for (path in _ref) {
         info = _ref[path];
         val = info.value;
         orig = dot.get(this, path);
         dot.set(this, path, val, true);
-        dot.set(this._related, path, orig, true);
+        _results.push(dot.set(this._related, path, orig, true));
       }
+      return _results;
     }
-    return true;
-  });
+  };
+  schema.methods.populate = function(fields, callback) {
+    var _this = this;
+    return mongoose.Document.prototype.populate.apply(this, [
+      fields, function(err, doc) {
+        if (!err) {
+          _this.$__movePopulated();
+          return callback(err, doc);
+        } else {
+          return callback(err, doc);
+        }
+      }
+    ]);
+  };
   schema.methods.cascadeSave = function(callback, config) {
     if (config == null) {
       config = null;

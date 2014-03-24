@@ -97,7 +97,6 @@ describe('Testing', function() {
       });
       return foo.cascadeSave(function(err, res) {
         return mongoose.model('Foo').find().populate('multi._bar').populate('multi._bars').exec(function(err, res) {
-          console.log(res);
           res[0].multi._bar.toString().should.equal(bar._id.toString());
           res[0]._related.multi._bar.title.should.equal('My Bar');
           return done();
@@ -339,7 +338,7 @@ describe('Testing', function() {
     dot.set(obj, 'tenants._former', [], true);
     return obj.tenants._current.name.first.should.equal('Foo');
   });
-  return it('should be accurate when you put with less relations (implicit delete)', function(done) {
+  it('should be accurate when you put with less relations (implicit delete)', function(done) {
     var foo,
       _this = this;
     foo = new fooClass({
@@ -361,6 +360,33 @@ describe('Testing', function() {
         res._bars.length.should.equal(1);
         res._related._bars.length.should.equal(1);
         return done();
+      });
+    });
+  });
+  return it('should rearrange when running populate on document rather than query', function(done) {
+    var foo,
+      _this = this;
+    foo = new fooClass({
+      title: 'My Foo',
+      _related: {
+        _bars: [
+          {
+            title: 'First Bar'
+          }, {
+            title: 'Second Bar'
+          }
+        ]
+      }
+    });
+    return foo.cascadeSave(function(err, res) {
+      return fooClass.findById(res._id, function(err, foo) {
+        return foo.populate('_bars', function(err, foo) {
+          should.exist(foo._related);
+          should.exist(foo._related._bars);
+          foo._related._bars.length.should.equal(2);
+          foo._bars[0].toString().should.equal(foo._related._bars[0]._id.toString());
+          return done();
+        });
       });
     });
   });

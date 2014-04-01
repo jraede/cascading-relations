@@ -363,7 +363,7 @@ describe('Testing', function() {
       });
     });
   });
-  return it('should rearrange when running populate on document rather than query', function(done) {
+  it('should rearrange when running populate on document rather than query', function(done) {
     var foo,
       _this = this;
     foo = new fooClass({
@@ -385,6 +385,33 @@ describe('Testing', function() {
           should.exist(foo._related._bars);
           foo._related._bars.length.should.equal(2);
           foo._bars[0].toString().should.equal(foo._related._bars[0]._id.toString());
+          return done();
+        });
+      });
+    });
+  });
+  return it('should handle doc populate with nested relations', function(done) {
+    var foo,
+      _this = this;
+    foo = new fooClass({
+      title: 'My Foo',
+      _related: {
+        multi: {
+          _bar: {
+            title: 'First Bar'
+          }
+        }
+      }
+    });
+    return foo.cascadeSave(function(err, res) {
+      return fooClass.findById(res._id, function(err, foo) {
+        return foo.populate('multi._bar', function(err, foo) {
+          should.exist(foo._related);
+          should.exist(foo._related.multi);
+          should.exist(foo._related.multi._bar);
+          foo._related.multi._bar.title.should.equal('First Bar');
+          console.log('FOO:', foo.toObject());
+          foo._related.multi._bar._id.toString().should.equal(foo.multi._bar.toString());
           return done();
         });
       });

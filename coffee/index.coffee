@@ -1,6 +1,7 @@
 mongoose = require 'mongoose'
 dot = require 'dotaccess'
 Q = require 'q'
+_ = require 'underscore'
 module.exports = (schema, options) ->
 	# schema.add
 	# 	'_related':mongoose.Schema.Types.Mixed
@@ -33,8 +34,10 @@ module.exports = (schema, options) ->
 				dot.set(@_related, path, orig, true)
 
 
-	schema.methods.populate = (fields, callback) ->
-		mongoose.Document.prototype.populate.apply @, [fields, (err, doc) =>
+	schema.methods.populate = ->
+		args = _.values(arguments)
+		callback = args.pop()
+		args.push (err, doc) =>
 			if !err
 
 				@$__movePopulated()
@@ -42,8 +45,7 @@ module.exports = (schema, options) ->
 			else
 				callback(err, doc)
 
-
-		]
+		mongoose.Document.prototype.populate.apply(@, args)
 			
 
 

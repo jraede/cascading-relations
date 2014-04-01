@@ -1,10 +1,12 @@
-var Q, dot, mongoose;
+var Q, dot, mongoose, _;
 
 mongoose = require('mongoose');
 
 dot = require('dotaccess');
 
 Q = require('q');
+
+_ = require('underscore');
 
 module.exports = function(schema, options) {
   schema.virtual('_related').get(function() {
@@ -38,18 +40,20 @@ module.exports = function(schema, options) {
       return _results;
     }
   };
-  schema.methods.populate = function(fields, callback) {
-    var _this = this;
-    return mongoose.Document.prototype.populate.apply(this, [
-      fields, function(err, doc) {
-        if (!err) {
-          _this.$__movePopulated();
-          return callback(err, doc);
-        } else {
-          return callback(err, doc);
-        }
+  schema.methods.populate = function() {
+    var args, callback,
+      _this = this;
+    args = _.values(arguments);
+    callback = args.pop();
+    args.push(function(err, doc) {
+      if (!err) {
+        _this.$__movePopulated();
+        return callback(err, doc);
+      } else {
+        return callback(err, doc);
       }
-    ]);
+    });
+    return mongoose.Document.prototype.populate.apply(this, args);
   };
   schema.methods.cascadeSave = function(callback, config) {
     if (config == null) {

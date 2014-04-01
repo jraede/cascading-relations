@@ -300,6 +300,26 @@ describe 'Testing', ->
 					foo._bars[0].toString().should.equal(foo._related._bars[0]._id.toString())
 					done()
 
+	it 'should handle doc populate with nested relations', (done) ->
+		foo = new fooClass
+			title:'My Foo'
+			_related:
+				multi:
+					_bar:
+						title:'First Bar'
+		foo.cascadeSave (err, res) =>
+			
+			fooClass.findById res._id, (err, foo) ->
+				foo.populate 'multi._bar', (err, foo) ->
+					should.exist(foo._related)
+					should.exist(foo._related.multi)
+					should.exist(foo._related.multi._bar)
+					foo._related.multi._bar.title.should.equal('First Bar')
+
+					console.log 'FOO:', foo.toObject()
+					foo._related.multi._bar._id.toString().should.equal(foo.multi._bar.toString())
+					done()
+
 
 
 

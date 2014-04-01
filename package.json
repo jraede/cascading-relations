@@ -1,6 +1,6 @@
 {
   "name": "cascading-relations",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "description": "Alternate populate/save/delete functionality for mongoose to allow for cascading relations",
   "main": "index.js",
   "scripts": {

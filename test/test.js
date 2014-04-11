@@ -390,7 +390,7 @@ describe('Testing', function() {
       });
     });
   });
-  return it('should handle doc populate with nested relations', function(done) {
+  it('should handle doc populate with nested relations', function(done) {
     var foo,
       _this = this;
     foo = new fooClass({
@@ -412,6 +412,41 @@ describe('Testing', function() {
           foo._related.multi._bar.title.should.equal('First Bar');
           console.log('FOO:', foo.toObject());
           foo._related.multi._bar._id.toString().should.equal(foo.multi._bar.toString());
+          return done();
+        });
+      });
+    });
+  });
+  return it('should still work with mongoose populate on query, which automatically creates a new model instance when you push', function(done) {
+    var myFoo;
+    myFoo = new fooClass({
+      title: 'Test Foo',
+      _related: {
+        _bars: [
+          {
+            title: 'Test Bar'
+          }
+        ]
+      }
+    });
+    return myFoo.cascadeSave(function(err) {
+      if (err) {
+        return done(err);
+      }
+      myFoo._related._bars.length.should.equal(1);
+      myFoo._bars.length.should.equal(1);
+      return fooClass.findById(myFoo._id).populate('_bars').exec(function(err, foo) {
+        foo._related._bars.push({
+          title: 'Test Bar 2'
+        });
+        return foo.cascadeSave(function(err) {
+          if (err) {
+            return done(err);
+          }
+          foo._related._bars.length.should.equal(2);
+          foo._bars.length.should.equal(2);
+          should.not.exist(foo._bars[1]._id);
+          should.exist(foo._related._bars[1]._id);
           return done();
         });
       });

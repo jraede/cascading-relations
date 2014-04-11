@@ -30,8 +30,18 @@ module.exports = (schema, options) ->
 			for path,info of @$__.populated
 				val = info.value
 				orig = dot.get(@, path)
+
+				# Mongoose array push tries to cast, so we don't want that
+				if orig instanceof Array
+					orig.push = Array.prototype.push
 				dot.set(@, path, val, true)
 				dot.set(@_related, path, orig, true)
+
+
+			# Mongoose stores previously populated values to account for its inability to really handle
+			# cascading relations, so it ends up using previously populated value instead of new one.
+			delete @$__.populated[path]
+
 
 
 	schema.methods.populate = ->
@@ -49,8 +59,6 @@ module.exports = (schema, options) ->
 			
 
 
-
-
 	schema.methods.cascadeSave = (callback, config=null) ->
 		@$__.cascadeSave = true
 
@@ -59,6 +67,9 @@ module.exports = (schema, options) ->
 	# Save relations and update refs
 	schema.methods.$__saveRelation = (path, val) ->
 		deferred = Q.defer()
+
+		
+
 
 		allowedRelation = (rel) =>
 			for allowed in @$__.cascadeSaveConfig.limit

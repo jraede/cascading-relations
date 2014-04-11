@@ -131,6 +131,7 @@ module.exports = (schema, options) ->
 				@$__.populateRelations[path] = {}
 				for result in results
 					@$__.populateRelations[path][result._id.toString()] = result
+
 				deferred.resolve()
 			, (err) ->
 				deferred.reject(err)
@@ -168,7 +169,17 @@ module.exports = (schema, options) ->
 			isArray = true
 		else
 			isArray = false
-		if data._id
+
+		# For some reason mongoose automatically makes it an object if you add to a populated path
+		getPrototype = (object) ->
+			funcNameRegex = /function (.{1,})\(/;
+			results = (funcNameRegex).exec((object).constructor.toString())
+			return if (results && results.length > 1) then results[1] else ""
+
+
+		isNewModel = (getPrototype(data) is 'model' and data.isNew)
+
+		if data._id and !isNewModel
 			if isArray
 				if orig.indexOf(data._id) < 0
 					orig.push(data._id)
@@ -179,7 +190,7 @@ module.exports = (schema, options) ->
 				if err
 					return deferred.reject(err)
 				else if !res
-					return deferred.reject(new Error('Could not find ref {ref} with ID ', + data._id.toString()))
+					return deferred.reject(new Error('Could not find ref ' + ref + ' with ID ' + data._id.toString()))
 				delete data._id
 				res.set(data)
 
@@ -207,15 +218,17 @@ module.exports = (schema, options) ->
 					limit:newArr
 					filter:filter
 		else
-
 			# We need to create a new one
 			newMod = new modelClass(data)
 			if isArray
+
+				# Mongoose overrides the push so it automatically turns into a document. We
+				# don't want that.
+				orig.push = Array.prototype.push
 				orig.push(newMod._id)
 				@set(path, orig)
 			else
 				@set(path, newMod._id)
-
 			newArr = null
 			if newMod.cascadeSave? and typeof newMod.cascadeSave is 'function'
 				method = 'cascadeSave'
@@ -227,10 +240,10 @@ module.exports = (schema, options) ->
 
 			else
 				method = 'save'
+
 			newMod[method] (err, res) =>
 				if err
 					return deferred.reject(err)
-				
 				deferred.resolve(res)
 			, 
 				limit:newArr
@@ -255,12 +268,11 @@ module.exports = (schema, options) ->
 			next()
 
 
-	schema.post 'save', (doc) ->
+	schema.pre 'save', (next) ->
 		if @$__.cascadeSave
 			# Update related with new related objects
 			newRelated = {}
-
-			for path,rels of doc.$__.populateRelations
+			for path,rels of @$__.populateRelations
 				curVal = @get(path)
 				if curVal instanceof Array
 					newVal = []
@@ -278,7 +290,7 @@ module.exports = (schema, options) ->
 			@set('_related', newRelated)
 			@$__.cascadeSave = false
 
-		return true
+		next()
 
 	schema.methods.$__handleDeletion = (path) ->
 

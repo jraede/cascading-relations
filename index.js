@@ -152,7 +152,7 @@ module.exports = function(schema, options) {
     return deferred.promise;
   };
   schema.methods.$__saveRelatedDoc = function(path, data, ref, through) {
-    var allowed, d, deferred, filter, isArray, method, modelClass, newArr, newMod, orig, _i, _len, _ref,
+    var allowed, d, deferred, filter, getPrototype, isArray, isNewModel, method, modelClass, newArr, newMod, orig, _i, _len, _ref,
       _this = this;
     deferred = Q.defer();
     if (through) {
@@ -179,7 +179,18 @@ module.exports = function(schema, options) {
     } else {
       isArray = false;
     }
-    if (data._id) {
+    getPrototype = function(object) {
+      var funcNameRegex, results;
+      funcNameRegex = /function (.{1,})\(/;
+      results = funcNameRegex.exec(object.constructor.toString());
+      if (results && results.length > 1) {
+        return results[1];
+      } else {
+        return "";
+      }
+    };
+    isNewModel = getPrototype(data) === 'model' && data.isNew;
+    if (data._id && !isNewModel) {
       if (isArray) {
         if (orig.indexOf(data._id) < 0) {
           orig.push(data._id);
@@ -193,7 +204,7 @@ module.exports = function(schema, options) {
         if (err) {
           return deferred.reject(err);
         } else if (!res) {
-          return deferred.reject(new Error('Could not find ref {ref} with ID ', +data._id.toString()));
+          return deferred.reject(new Error('Could not find ref ' + ref + ' with ID ' + data._id.toString()));
         }
         delete data._id;
         res.set(data);
@@ -226,6 +237,7 @@ module.exports = function(schema, options) {
     } else {
       newMod = new modelClass(data);
       if (isArray) {
+        orig.push = Array.prototype.push;
         orig.push(newMod._id);
         this.set(path, orig);
       } else {
@@ -282,11 +294,11 @@ module.exports = function(schema, options) {
       return next();
     }
   });
-  schema.post('save', function(doc) {
+  schema.pre('save', function(next) {
     var curVal, id, newRelated, newVal, path, rels, _i, _len, _ref;
     if (this.$__.cascadeSave) {
       newRelated = {};
-      _ref = doc.$__.populateRelations;
+      _ref = this.$__.populateRelations;
       for (path in _ref) {
         rels = _ref[path];
         curVal = this.get(path);
@@ -312,7 +324,7 @@ module.exports = function(schema, options) {
       this.set('_related', newRelated);
       this.$__.cascadeSave = false;
     }
-    return true;
+    return next();
   });
   schema.methods.$__handleDeletion = function(path) {
     if (this.schema.paths[path].instance === 'ObjectID' && (this.schema.paths[path].options.ref != null)) {

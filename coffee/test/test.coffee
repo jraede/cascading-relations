@@ -320,6 +320,39 @@ describe 'Testing', ->
 					foo._related.multi._bar._id.toString().should.equal(foo.multi._bar.toString())
 					done()
 
+	it 'should still work with mongoose populate on query, which automatically creates a new model instance when you push', (done) ->
+		myFoo = new fooClass
+			title:'Test Foo'
+			_related:
+				_bars:[
+						title:'Test Bar'
+				]
+
+
+		myFoo.cascadeSave (err) ->
+			if err
+				return done(err)
+			myFoo._related._bars.length.should.equal(1)
+			myFoo._bars.length.should.equal(1)
+
+
+			fooClass.findById(myFoo._id).populate('_bars').exec (err, foo) ->
+
+				foo._related._bars.push
+					title:'Test Bar 2'
+
+
+				foo.cascadeSave (err) ->
+					if err
+						return done(err)
+					foo._related._bars.length.should.equal(2)
+					foo._bars.length.should.equal(2)
+					should.not.exist(foo._bars[1]._id)
+					should.exist(foo._related._bars[1]._id)
+					done()
+
+
+
 
 
 

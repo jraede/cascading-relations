@@ -25,19 +25,21 @@ module.exports = function(schema, options) {
     return true;
   });
   schema.methods.$__movePopulated = function() {
-    var info, orig, path, val, _ref, _results;
+    var info, orig, path, val, _ref;
     if (this.$__.populated != null) {
       this._related = {};
       _ref = this.$__.populated;
-      _results = [];
       for (path in _ref) {
         info = _ref[path];
         val = info.value;
         orig = dot.get(this, path);
+        if (orig instanceof Array) {
+          orig.push = Array.prototype.push;
+        }
         dot.set(this, path, val, true);
-        _results.push(dot.set(this._related, path, orig, true));
+        dot.set(this._related, path, orig, true);
       }
-      return _results;
+      return delete this.$__.populated[path];
     }
   };
   schema.methods.populate = function() {

@@ -264,7 +264,7 @@ describe 'Testing', ->
 		dot.set(obj, 'tenants._former', [], true)
 		obj.tenants._current.name.first.should.equal('Foo')
 
-	it 'should be accurate when you put with less relations (implicit delete)', (done) ->
+	it 'should be accurate when you put with fewer relations (implicit delete)', (done) ->
 		foo = new fooClass
 			title:'My Foo'
 			_related:
@@ -351,7 +351,32 @@ describe 'Testing', ->
 					should.exist(foo._related._bars[1]._id)
 					done()
 
+	it 'should handle multiple calls of populate', (done) ->
+		myFoo = new fooClass
+			title:'Test Foo'
+			_related:
+				_bars:[
+						title:'Test Bar'
+				]
+				_bar:
+					title:'Test bar 2'
 
+
+		myFoo.cascadeSave (err) ->
+			if err
+				return done(err)
+			myFoo._related._bars.length.should.equal(1)
+			myFoo._bars.length.should.equal(1)
+
+
+			fooClass.findById(myFoo._id).exec (err, foo) ->
+
+				foo.populate '_bars', (err) ->
+					foo.populate '_bar', (err) ->
+						foo._related._bars[0].title.should.equal('Test Bar')
+						foo._related._bar.title.should.equal('Test bar 2')
+						foo._bar.toString().should.equal(foo._related._bar._id.toString())
+						done()
 
 
 

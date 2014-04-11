@@ -24,33 +24,50 @@ module.exports = (schema, options) ->
 		
 		return true
 
-	schema.methods.$__movePopulated = ->
+	schema.methods.$__movePopulated = (paths=null) ->
+		
 		if @$__.populated?
-			@_related = {}
-			for path,info of @$__.populated
+			if !@_related?
+				@_related = {}
+
+			# Normalize
+			if paths
+				if !(paths instanceof Array)
+					paths = [paths]
+			else 
+				paths = _.keys(@$__.populated)
+			for path in paths
+				info = @$__.populated[path]
+				if !info?
+					continue
 				val = info.value
 				orig = dot.get(@, path)
 
 				# Mongoose array push tries to cast, so we don't want that
 				if orig instanceof Array
 					orig.push = Array.prototype.push
+
+
 				dot.set(@, path, val, true)
 				dot.set(@_related, path, orig, true)
 
 
-			# Mongoose stores previously populated values to account for its inability to really handle
-			# cascading relations, so it ends up using previously populated value instead of new one.
-			delete @$__.populated[path]
+				# Mongoose stores previously populated values to account for its inability to really handle
+				# cascading relations, so it ends up using previously populated value instead of new one.
+				delete @$__.populated[path]
 
 
 
 	schema.methods.populate = ->
 		args = _.values(arguments)
+
+		paths = args[0]
+
 		callback = args.pop()
 		args.push (err, doc) =>
 			if !err
 
-				@$__movePopulated()
+				@$__movePopulated(paths)
 				callback(err, doc)
 			else
 				callback(err, doc)

@@ -24,13 +24,29 @@ module.exports = function(schema, options) {
     this.$__movePopulated();
     return true;
   });
-  schema.methods.$__movePopulated = function() {
-    var info, orig, path, val, _ref;
+  schema.methods.$__movePopulated = function(paths) {
+    var info, orig, path, val, _i, _len, _results;
+    if (paths == null) {
+      paths = null;
+    }
     if (this.$__.populated != null) {
-      this._related = {};
-      _ref = this.$__.populated;
-      for (path in _ref) {
-        info = _ref[path];
+      if (this._related == null) {
+        this._related = {};
+      }
+      if (paths) {
+        if (!(paths instanceof Array)) {
+          paths = [paths];
+        }
+      } else {
+        paths = _.keys(this.$__.populated);
+      }
+      _results = [];
+      for (_i = 0, _len = paths.length; _i < _len; _i++) {
+        path = paths[_i];
+        info = this.$__.populated[path];
+        if (info == null) {
+          continue;
+        }
         val = info.value;
         orig = dot.get(this, path);
         if (orig instanceof Array) {
@@ -38,18 +54,20 @@ module.exports = function(schema, options) {
         }
         dot.set(this, path, val, true);
         dot.set(this._related, path, orig, true);
+        _results.push(delete this.$__.populated[path]);
       }
-      return delete this.$__.populated[path];
+      return _results;
     }
   };
   schema.methods.populate = function() {
-    var args, callback,
+    var args, callback, paths,
       _this = this;
     args = _.values(arguments);
+    paths = args[0];
     callback = args.pop();
     args.push(function(err, doc) {
       if (!err) {
-        _this.$__movePopulated();
+        _this.$__movePopulated(paths);
         return callback(err, doc);
       } else {
         return callback(err, doc);

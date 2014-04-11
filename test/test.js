@@ -338,7 +338,7 @@ describe('Testing', function() {
     dot.set(obj, 'tenants._former', [], true);
     return obj.tenants._current.name.first.should.equal('Foo');
   });
-  it('should be accurate when you put with less relations (implicit delete)', function(done) {
+  it('should be accurate when you put with fewer relations (implicit delete)', function(done) {
     var foo,
       _this = this;
     foo = new fooClass({
@@ -417,7 +417,7 @@ describe('Testing', function() {
       });
     });
   });
-  return it('should still work with mongoose populate on query, which automatically creates a new model instance when you push', function(done) {
+  it('should still work with mongoose populate on query, which automatically creates a new model instance when you push', function(done) {
     var myFoo;
     myFoo = new fooClass({
       title: 'Test Foo',
@@ -448,6 +448,39 @@ describe('Testing', function() {
           should.not.exist(foo._bars[1]._id);
           should.exist(foo._related._bars[1]._id);
           return done();
+        });
+      });
+    });
+  });
+  return it('should handle multiple calls of populate', function(done) {
+    var myFoo;
+    myFoo = new fooClass({
+      title: 'Test Foo',
+      _related: {
+        _bars: [
+          {
+            title: 'Test Bar'
+          }
+        ],
+        _bar: {
+          title: 'Test bar 2'
+        }
+      }
+    });
+    return myFoo.cascadeSave(function(err) {
+      if (err) {
+        return done(err);
+      }
+      myFoo._related._bars.length.should.equal(1);
+      myFoo._bars.length.should.equal(1);
+      return fooClass.findById(myFoo._id).exec(function(err, foo) {
+        return foo.populate('_bars', function(err) {
+          return foo.populate('_bar', function(err) {
+            foo._related._bars[0].title.should.equal('Test Bar');
+            foo._related._bar.title.should.equal('Test bar 2');
+            foo._bar.toString().should.equal(foo._related._bar._id.toString());
+            return done();
+          });
         });
       });
     });
